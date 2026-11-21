@@ -43,6 +43,16 @@ npm run prepush
 | `npm run coverage` | All suites with coverage; reports go to `coverage/user` and `coverage/venue`. |
 | `npm run prepush` | Runs `prepush.sh`: lint, typecheck, build, tests, and centralized coverage. |
 
+Local shell wrappers:
+
+```bash
+./test-backend.sh
+./test-user.sh
+./test-venue.sh
+./test-all.sh
+./prepush.sh
+```
+
 ## Backend Environment
 
 Backend tests default to SQLite in `phpunit.xml`. Local PHP may not have `pdo_sqlite`; use MySQL overrides:

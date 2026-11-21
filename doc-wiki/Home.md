@@ -6,7 +6,7 @@ Welcome to the **eventy-test** documentation hub.
 
 - [Overview](Overview.md) — high-level summary, quick start, features, and troubleshooting.
 - [Testing Framework Guide](8-testing-framework-guide.md) — test layout, commands, coverage, and pre-push gate.
-- [Scripts](9-scripts.md) — `run-all.mjs`, `prepush.sh`, npm scripts, and environment variables.
+- [Scripts](9-scripts.md) — `test-*.sh`, `run-all.mjs`, `prepush.sh`, npm scripts, and environment variables.
 
 ## Build Order
 

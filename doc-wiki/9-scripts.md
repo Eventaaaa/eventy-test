@@ -52,6 +52,18 @@ It performs:
 
 The script skips backend checks when `php` is unavailable. Any failed step sets a non-zero exit status.
 
+## Local Shell Scripts
+
+| Script | Mode |
+|---|---|
+| `./test-backend.sh` | `backend` |
+| `./test-user.sh` | `user` |
+| `./test-venue.sh` | `venue` |
+| `./test-all.sh` | `test` |
+| `./prepush.sh` | Full lint, build, test, and coverage gate |
+
+The test wrappers call `scripts/run-all.mjs`, so they behave exactly like the matching npm scripts.
+
 ## npm Scripts
 
 `package.json` exposes:
@@ -80,6 +92,6 @@ export EVENTY_DB_PASSWORD=your_password
 
 ## Notes
 
-- There are no separate `test-backend.sh`, `test-user.sh`, `test-venue.sh`, or `test-all.sh` files; use `run-all.mjs` or the npm scripts instead.
+- `test-backend.sh`, `test-user.sh`, `test-venue.sh`, and `test-all.sh` are thin wrappers around `run-all.mjs`.
 - Frontend aliases are defined in `vitest.user.config.ts` and `vitest.venue.config.ts`.
 - Backend tests currently run from `eventy-backend`; frontend tests are centralized under `tests/user` and `tests/venue`.
