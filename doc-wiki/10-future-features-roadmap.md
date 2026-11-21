@@ -54,7 +54,7 @@ The owner talks to an AI agent in natural language:
 
 ```
 Owner: "What was my best month in 2026?"
-AI:    "August — 12 bookings, revenue of 847,000 EGP.
+AI:    "August — 12 bookings, revenue of 847,00No Cost.
         However, your cancellation rate was 25% — higher than usual."
 
 Owner: "Why did cancellations increase?"
@@ -62,8 +62,8 @@ AI:    "8 out of 12 bookings were cancelled a week after deposit payment.
         Consider reviewing your refund policy."
 
 Owner: "What's my expected revenue for November?"
-AI:    "Based on current bookings: 420,000 EGP.
-        You still have 6 open slots worth ~180,000 EGP if filled."
+AI:    "Based on current bookings: 420,00No Cost.
+        You still have 6 open slots worth ~180,00No Cost if filled."
 ```
 
 **Topics the agent covers:**

@@ -47,7 +47,7 @@ describe("CateringManager", () => {
   it("displays standard pricing per person", () => {
     render(<CateringManager venueId={1} embedded />);
 
-    expect(screen.getByText("100 EGP / person")).toBeInTheDocument();
-    expect(screen.getByText("200 EGP / person")).toBeInTheDocument();
+    expect(screen.getByText("10No Cost / person")).toBeInTheDocument();
+    expect(screen.getByText("20No Cost / person")).toBeInTheDocument();
   });
 });
