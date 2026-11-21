@@ -62,8 +62,8 @@ describe("catering price formatting", () => {
   });
 
   it("shows standard and priced menus per person", () => {
-    expect(formatCateringPrice(option("standard", 100))).toBe("10No Cost / person");
-    expect(formatCateringPrice(option("set_menu", 200))).toBe("20No Cost / person");
-    expect(formatCateringPrice(option("buffet", 300))).toBe("30No Cost / person");
+    expect(formatCateringPrice(option("standard", 100))).toBe("100 EGP / person");
+    expect(formatCateringPrice(option("set_menu", 200))).toBe("200 EGP / person");
+    expect(formatCateringPrice(option("buffet", 300))).toBe("300 EGP / person");
   });
 });

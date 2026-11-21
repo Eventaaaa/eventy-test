@@ -8,6 +8,7 @@
     "test:backend": "node scripts/run-all.mjs backend",
     "test:user": "node scripts/run-all.mjs user",
     "test:venue": "node scripts/run-all.mjs venue",
+    "test:integration": "node scripts/run-all.mjs integration",
     "coverage": "node scripts/run-all.mjs coverage",
     "prepush": "bash prepush.sh"
   },

@@ -116,6 +116,13 @@ if (mode === "test") {
   runFrontendTests("user", "vitest.user.config.ts", false);
 } else if (mode === "venue") {
   runFrontendTests("venue", "vitest.venue.config.ts", false);
+} else if (mode === "integration") {
+  run("HTTP integration tests", process.execPath, [
+    vitestCli,
+    "run",
+    "--config",
+    "vitest.integration.config.ts",
+  ]);
 } else if (mode === "coverage") {
   runBackendTests();
   runFrontendCoverage();
