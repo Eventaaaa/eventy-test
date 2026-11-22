@@ -133,11 +133,48 @@ jobs:
           touch database/database.sqlite
           php artisan config:clear
           php artisan migrate --force
+          npm install
+          npm run build
+
+      - name: Install eventy-test dependencies
+        working-directory: eventy-test
+        shell: bash
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Install and build user frontend
+        working-directory: eventy-user-frontend
+        shell: bash
+        run: |
+          npm ci
+          npm run lint
+          npm run typecheck
+          npm run build
+
+      - name: Install and build venue frontend
+        working-directory: eventy-venue-frontend
+        shell: bash
+        run: |
+          npm ci
+          npm run lint
+          npm run typecheck
+          npm run build
+
+      - name: Run full test suite
+        working-directory: eventy-test
+        shell: bash
+        run: |
+          set -o pipefail
+          npm test 2>&1 | tee report/full-test-output.log
+
+      - name: Seed integration data
+        working-directory: eventy-backend
+        shell: bash
+        run: |
           php artisan db:seed --force
           php artisan eventy:test-accounts --force
           php artisan route:list --json > /dev/null
-          npm install
-          npm run build
 
       - name: Verify database schema
         working-directory: eventy-test
@@ -165,25 +202,6 @@ jobs:
           echo "Backend failed to become ready."
           cat eventy-backend/backend.log
           exit 1
-
-      - name: Install and build user frontend
-        working-directory: eventy-user-frontend
-        shell: bash
-        run: |
-          npm ci
-          npm run lint
-          npm run typecheck
-          npm run build
-
-      - name: Install and build venue frontend
-        working-directory: eventy-venue-frontend
-        shell: bash
-        run: |
-          npm ci
-          npm run lint
-          npm run typecheck
-          npm test
-          npm run build
 
       - name: Start user frontend preview
         working-directory: eventy-user-frontend
@@ -215,13 +233,6 @@ jobs:
           cat eventy-venue-frontend/preview.log
           exit 1
 
-      - name: Install eventy-test dependencies
-        working-directory: eventy-test
-        shell: bash
-        run: |
-          npm ci
-          npx playwright install --with-deps chromium
-
       - name: Run HTTP integration tests
         working-directory: eventy-test
         shell: bash
@@ -231,6 +242,14 @@ jobs:
         working-directory: eventy-test
         shell: bash
         run: npm run test:e2e
+
+      - name: Upload full test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-test-output
+          path: eventy-test/report/full-test-output.log
+          if-no-files-found: warn
 
       - name: Upload backend log
         if: failure()
