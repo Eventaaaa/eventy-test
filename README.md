@@ -133,16 +133,6 @@ coverage/venue
 
 Backend coverage runs only when Xdebug or PCOV is available.
 
-## Troubleshooting
-
-| Problem | Fix |
-|---|---|
-| `pdo_sqlite` driver missing | Use the MySQL `EVENTY_DB_*` variables above, or install `pdo_sqlite`. |
-| Vitest not found | Run `npm install` in `eventy-test`. |
-| Backend tests cannot connect | Check the test database exists and `EVENTY_DB_*` values are correct. |
-| Moved test cannot resolve `@/...` | Check the alias in `vitest.user.config.ts` or `vitest.venue.config.ts`. |
-| Permission denied running a script | Run `chmod +x *.sh`. |
-
 ## Documentation
 
 - [Wiki home](doc-wiki/Home.md)

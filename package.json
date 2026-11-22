@@ -9,10 +9,13 @@
     "test:user": "node scripts/run-all.mjs user",
     "test:venue": "node scripts/run-all.mjs venue",
     "test:integration": "node scripts/run-all.mjs integration",
+    "test:schema": "node scripts/verify-schema.mjs",
+    "test:e2e": "playwright test --config playwright.config.ts",
     "coverage": "node scripts/run-all.mjs coverage",
     "prepush": "bash prepush.sh"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.1",
     "@tanstack/react-query": "^5.83.0",
     "@testing-library/jest-dom": "^6.6.0",
     "@testing-library/react": "^16.0.0",

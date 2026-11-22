@@ -37,9 +37,12 @@ env:
   AD_SHARE_PUBLIC_URL: http://127.0.0.1:8080
   DB_CONNECTION: sqlite
   DB_DATABASE: database/database.sqlite
+  CACHE_STORE: null
   VITE_API_URL: http://127.0.0.1:8080/api
   VITE_API_BASE_URL: http://127.0.0.1:8080/api/v1
   EVENTY_BACKEND_URL: http://127.0.0.1:8080
+  USER_FRONTEND_URL: http://127.0.0.1:4173
+  VENUE_FRONTEND_URL: http://127.0.0.1:4174
 
 jobs:
   integration:
@@ -130,10 +133,16 @@ jobs:
           touch database/database.sqlite
           php artisan config:clear
           php artisan migrate --force
+          php artisan db:seed --force
           php artisan eventy:test-accounts --force
           php artisan route:list --json > /dev/null
           npm install
           npm run build
+
+      - name: Verify database schema
+        working-directory: eventy-test
+        shell: bash
+        run: npm run test:schema
 
       - name: Start backend
         working-directory: eventy-backend
@@ -176,12 +185,52 @@ jobs:
           npm test
           npm run build
 
-      - name: Run HTTP integration tests
+      - name: Start user frontend preview
+        working-directory: eventy-user-frontend
+        shell: bash
+        run: |
+          nohup npm run preview -- --host 127.0.0.1 --port 4173 --strictPort > preview.log 2>&1 &
+          echo "USER_PREVIEW_PID=$!" >> "$GITHUB_ENV"
+
+      - name: Start venue frontend preview
+        working-directory: eventy-venue-frontend
+        shell: bash
+        run: |
+          nohup npm run preview -- --host 127.0.0.1 --port 4174 --strictPort > preview.log 2>&1 &
+          echo "VENUE_PREVIEW_PID=$!" >> "$GITHUB_ENV"
+
+      - name: Wait for frontend previews
+        shell: bash
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl -fsS "$USER_FRONTEND_URL" > /dev/null && curl -fsS "$VENUE_FRONTEND_URL" > /dev/null; then
+              echo "Frontend previews are ready after $attempt attempt(s)."
+              exit 0
+            fi
+            echo "Waiting for frontend previews ($attempt/30)..."
+            sleep 2
+          done
+          echo "Frontend previews failed to become ready."
+          cat eventy-user-frontend/preview.log
+          cat eventy-venue-frontend/preview.log
+          exit 1
+
+      - name: Install eventy-test dependencies
         working-directory: eventy-test
         shell: bash
         run: |
           npm ci
-          npm run test:integration
+          npx playwright install --with-deps chromium
+
+      - name: Run HTTP integration tests
+        working-directory: eventy-test
+        shell: bash
+        run: npm run test:integration
+
+      - name: Run browser E2E tests
+        working-directory: eventy-test
+        shell: bash
+        run: npm run test:e2e
 
       - name: Upload backend log
         if: failure()
@@ -191,11 +240,36 @@ jobs:
           path: eventy-backend/backend.log
           if-no-files-found: warn
 
-      - name: Stop backend
+      - name: Upload frontend preview logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-preview-logs
+          path: |
+            eventy-user-frontend/preview.log
+            eventy-venue-frontend/preview.log
+          if-no-files-found: warn
+
+      - name: Upload Playwright artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts
+          path: |
+            eventy-test/playwright-report/
+            eventy-test/test-results/
+          if-no-files-found: warn
+
+      - name: Stop backend and frontend previews
         if: always()
         shell: bash
         run: |
-          if [ -n "${BACKEND_PID:-}" ]; then
-            pkill -P "$BACKEND_PID" 2>/dev/null || true
-            kill "$BACKEND_PID" 2>/dev/null || true
-          fi
+          for pid in "${BACKEND_PID:-}" "${USER_PREVIEW_PID:-}" "${VENUE_PREVIEW_PID:-}"; do
+            if [ -n "$pid" ]; then
+              pkill -P "$pid" 2>/dev/null || true
+              kill "$pid" 2>/dev/null || true
+            fi
+          done
+
+          pkill -f "[v]ite preview --host 127.0.0.1 --port 4173 --strictPort" 2>/dev/null || true
+          pkill -f "[v]ite preview --host 127.0.0.1 --port 4174 --strictPort" 2>/dev/null || true
