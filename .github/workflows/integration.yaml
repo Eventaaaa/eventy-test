@@ -1,8 +1,18 @@
 name: Cross-repository integration
 
 on:
+  push:
+  pull_request:
   workflow_dispatch:
     inputs:
+      source_repo:
+        description: Source repository that triggered the run
+        required: false
+        type: string
+      ref:
+        description: Source commit ref
+        required: false
+        type: string
       backend_ref:
         description: Backend git ref
         required: false
@@ -16,7 +26,7 @@ on:
       venue_frontend_ref:
         description: Venue frontend git ref
         required: false
-        default: main
+        default: ai-social-venue-agent
         type: string
   repository_dispatch:
     types: [eventy-integration]
@@ -25,7 +35,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: integration-${{ github.event.client_payload.source_repo || 'manual' }}-${{ github.event.client_payload.ref || github.run_id }}
+  group: integration-${{ github.event.client_payload.source_repo || github.event.repository.name || 'manual' }}-${{ github.event.client_payload.ref || github.sha || github.run_id }}
   cancel-in-progress: true
 
 env:
@@ -37,7 +47,7 @@ env:
   AD_SHARE_PUBLIC_URL: http://127.0.0.1:8080
   DB_CONNECTION: sqlite
   DB_DATABASE: database/database.sqlite
-  CACHE_STORE: null
+  CACHE_STORE: database
   VITE_API_URL: http://127.0.0.1:8080/api
   VITE_API_BASE_URL: http://127.0.0.1:8080/api/v1
   EVENTY_BACKEND_URL: http://127.0.0.1:8080
@@ -54,6 +64,8 @@ jobs:
         id: refs
         shell: bash
         env:
+          INPUT_SOURCE_REPO: ${{ inputs.source_repo }}
+          INPUT_REF: ${{ inputs.ref }}
           INPUT_BACKEND_REF: ${{ inputs.backend_ref }}
           INPUT_USER_FRONTEND_REF: ${{ inputs.user_frontend_ref }}
           INPUT_VENUE_FRONTEND_REF: ${{ inputs.venue_frontend_ref }}
@@ -63,14 +75,16 @@ jobs:
           PAYLOAD_SOURCE_REPO: ${{ github.event.client_payload.source_repo }}
           PAYLOAD_REF: ${{ github.event.client_payload.ref }}
         run: |
+          source_repo="${PAYLOAD_SOURCE_REPO:-${INPUT_SOURCE_REPO:-}}"
+          source_ref="${PAYLOAD_REF:-${INPUT_REF:-}}"
           backend_ref="${PAYLOAD_BACKEND_REF:-${INPUT_BACKEND_REF:-main}}"
           user_ref="${PAYLOAD_USER_FRONTEND_REF:-${INPUT_USER_FRONTEND_REF:-main}}"
-          venue_ref="${PAYLOAD_VENUE_FRONTEND_REF:-${INPUT_VENUE_FRONTEND_REF:-main}}"
+          venue_ref="${PAYLOAD_VENUE_FRONTEND_REF:-${INPUT_VENUE_FRONTEND_REF:-ai-social-venue-agent}}"
 
-          case "$PAYLOAD_SOURCE_REPO" in
-            eventy-backend) backend_ref="${PAYLOAD_REF:-$backend_ref}" ;;
-            eventy-user-frontend) user_ref="${PAYLOAD_REF:-$user_ref}" ;;
-            eventy-venue-frontend) venue_ref="${PAYLOAD_REF:-$venue_ref}" ;;
+          case "$source_repo" in
+            eventy-backend) backend_ref="${source_ref:-$backend_ref}" ;;
+            eventy-user-frontend) user_ref="${source_ref:-$user_ref}" ;;
+            eventy-venue-frontend) venue_ref="${source_ref:-$venue_ref}" ;;
           esac
 
           echo "backend_ref=$backend_ref" >> "$GITHUB_OUTPUT"
@@ -165,6 +179,7 @@ jobs:
         working-directory: eventy-test
         shell: bash
         run: |
+          mkdir -p report
           set -o pipefail
           npm test 2>&1 | tee report/full-test-output.log
 
@@ -172,9 +187,12 @@ jobs:
         working-directory: eventy-backend
         shell: bash
         run: |
-          php artisan db:seed --force
-          php artisan eventy:test-accounts --force
-          php artisan route:list --json > /dev/null
+          set -o pipefail
+          {
+            php artisan db:seed --force
+            php artisan eventy:test-accounts --force
+            php artisan route:list --json > /dev/null
+          } 2>&1 | tee ../eventy-test/report/seed-output.log
 
       - name: Verify database schema
         working-directory: eventy-test
@@ -184,6 +202,8 @@ jobs:
       - name: Start backend
         working-directory: eventy-backend
         shell: bash
+        env:
+          CACHE_STORE: 'null'
         run: |
           nohup php artisan serve --host=127.0.0.1 --port=8080 > backend.log 2>&1 &
           echo "BACKEND_PID=$!" >> "$GITHUB_ENV"
@@ -249,6 +269,14 @@ jobs:
         with:
           name: full-test-output
           path: eventy-test/report/full-test-output.log
+          if-no-files-found: warn
+
+      - name: Upload seed log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: seed-output
+          path: eventy-test/report/seed-output.log
           if-no-files-found: warn
 
       - name: Upload backend log

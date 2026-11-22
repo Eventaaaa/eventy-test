@@ -7,6 +7,10 @@ import {
   uploadAvatar,
 } from "@/lib/api";
 
+function apiPath(url: string): string {
+  return url.replace(/^https?:\/\/[^/]+/, "");
+}
+
 const baseUser = (): ApiUser => ({
   id: 1,
   name: "Test User",
@@ -76,7 +80,7 @@ describe("avatar URL normalization", () => {
     expect(JSON.parse(localStorage.getItem("eventy_user") ?? "{}").avatar_url).toBe(
       profile.avatar_url,
     );
-    expect(fetchMock.mock.calls[0][0]).toBe("/api/v1/profile");
+    expect(apiPath(fetchMock.mock.calls[0][0])).toBe("/api/v1/profile");
   });
 
   it("uploads the profile picture to the backend and stores the returned user", async () => {
@@ -99,7 +103,7 @@ describe("avatar URL normalization", () => {
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     const body = init.body as FormData;
 
-    expect(url).toBe("/api/v1/profile/avatar");
+    expect(apiPath(url)).toBe("/api/v1/profile/avatar");
     expect(init.method).toBe("POST");
     expect(body.get("avatar")).toBe(file);
     expect(user.avatar_url).toMatch(/\/storage\/avatars\/user-uploaded\.png$/);

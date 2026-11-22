@@ -17,6 +17,10 @@ function jsonResponse(payload: unknown, ok = true, status = 200): Response {
   } as Response;
 }
 
+function apiPath(url: string): string {
+  return url.replace(/^https?:\/\/[^/]+/, "");
+}
+
 const notification = (id: number, isRead = false): Notification => ({
   id,
   type_code: "booking_confirmed",
@@ -52,7 +56,7 @@ describe("user notification API", () => {
     expect(result).toEqual(payload);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe("/api/v1/notifications");
+    expect(apiPath(url)).toBe("/api/v1/notifications");
     expect(new Headers(init.headers).get("Authorization")).toBe("Bearer token-123");
     expect(new Headers(init.headers).get("Accept")).toBe("application/json");
   });
@@ -79,7 +83,9 @@ describe("user notification API", () => {
     await markNotificationRead(7);
     await markAllNotificationsRead();
 
-    expect(fetchMock.mock.calls.map(([url, init]) => [url, (init as RequestInit).method])).toEqual([
+    expect(
+      fetchMock.mock.calls.map(([url, init]) => [apiPath(url), (init as RequestInit).method]),
+    ).toEqual([
       ["/api/v1/notifications/7/read", "POST"],
       ["/api/v1/notifications/read-all", "POST"],
     ]);
