@@ -128,12 +128,12 @@ const publicCases: CaseFactory[] = [
     }),
   },
   {
-    label: "ads members",
+    label: "ads",
     build: () => ({
-      label: "ads members",
-      path: "/api/v1/ads-members",
+      label: "ads",
+      path: "/api/v1/ads",
       shape: "array",
-      fields: ["id", "person", "business"],
+      fields: ["id", "person", "business", "phone"],
     }),
   },
   {
@@ -171,7 +171,7 @@ const publicCases: CaseFactory[] = [
       label: "metadata",
       path: "/api/v1/metadata",
       shape: "object",
-      fields: ["periods", "social_platforms", "media_types", "facility_categories", "team_roles"],
+      fields: ["periods", "social_platforms", "media_types", "team_roles"],
     }),
   },
   {
@@ -197,10 +197,6 @@ const userCases: CaseFactory[] = [
   {
     label: "user profile",
     build: () => ({ label: "user profile", path: "/api/v1/profile", token: "user", shape: "object", fields: ["id", "email", "role"] }),
-  },
-  {
-    label: "user icons",
-    build: () => ({ label: "user icons", path: "/api/v1/profile/icons", token: "user", shape: "array", fields: ["key", "name", "svg"], minLength: 1 }),
   },
   {
     label: "company icons",
@@ -354,6 +350,58 @@ describe("frontend backend data contracts", () => {
       await runCase(factory.build(context));
     });
   }
+
+  it("facility detail items expose the denormalized facility name and top flag", async () => {
+    const { response, body } = await requestJson(
+      `/api/v1/venues/${context.ownerVenueId}/facility-details`,
+      { headers: { Authorization: `Bearer ${context.ownerToken}` } },
+    );
+
+    expect(response.status).toBe(200);
+
+    const groups = dataOf(body) as unknown[];
+    const group = asRecord(groups[0]);
+    const items = (group?.items ?? []) as unknown[];
+    const item = asRecord(items[0]);
+
+    expect(item).not.toBeNull();
+    for (const field of ["id", "facility_id", "facility_name", "label", "is_top"]) {
+      expect(field in (item ?? {}), `facility detail item should contain ${field}`).toBe(true);
+    }
+  });
+
+  it("venue topFacilities contains only starred detail rows", async () => {
+    const headers = { Authorization: `Bearer ${context.ownerToken}` };
+    const { response, body } = await requestJson(
+      `/api/v1/venues/${context.ownerVenueId}?includeFacilityDetails=true`,
+      { headers },
+    );
+
+    expect(response.status).toBe(200);
+
+    const venue = dataOf(body) as Record<string, unknown>;
+    const topFacilities = (venue?.topFacilities ?? []) as unknown[];
+
+    expect(Array.isArray(venue?.topFacilities)).toBe(true);
+    for (const facility of topFacilities) {
+      expect(asRecord(facility)?.is_top).toBe(true);
+    }
+
+    const { body: detailsBody } = await requestJson(
+      `/api/v1/venues/${context.ownerVenueId}/facility-details`,
+      { headers },
+    );
+    const groups = dataOf(detailsBody) as unknown[];
+    const starredNames = groups.flatMap((group) => {
+      const items = (asRecord(group)?.items ?? []) as unknown[];
+      return items
+        .filter((item) => asRecord(item)?.is_top === true)
+        .map((item) => String(asRecord(item)?.label ?? ""));
+    });
+
+    expect(topFacilities.map((facility) => asRecord(facility)?.name).sort())
+      .toEqual(starredNames.sort());
+  });
 
   it.each(protectedPaths)("rejects anonymous access to %s", async (path) => {
     const { response } = await requestJson(path);

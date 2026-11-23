@@ -43,26 +43,26 @@ describe("avatar URL normalization", () => {
     expect(getCurrentUser()?.avatar_url).toBe(DEFAULT_AVATAR_URL);
   });
 
-  it("falls back from avatar_url to avatar_path", () => {
+  it("falls back from avatar_url to icon_path", () => {
     storeUser({
       avatar_url: null,
-      avatar_path: "avatars/user-1.png",
+      icon_path: "users-icons/user-1.png",
     });
 
-    expect(getCurrentUser()?.avatar_url).toMatch(/\/storage\/avatars\/user-1\.png$/);
+    expect(getCurrentUser()?.avatar_url).toMatch(/\/storage\/users-icons\/user-1\.png$/);
   });
 
   it("rewrites relative storage and icon paths onto the storage origin", () => {
-    storeUser({ avatar_url: "storage/avatars/user-2.png" });
-    expect(getCurrentUser()?.avatar_url).toMatch(/\/storage\/avatars\/user-2\.png$/);
+    storeUser({ avatar_url: "storage/users-icons/user-2.png" });
+    expect(getCurrentUser()?.avatar_url).toMatch(/\/storage\/users-icons\/user-2\.png$/);
 
     storeUser({ avatar_url: "team-icons/owner.png?q=1" });
     expect(getCurrentUser()?.avatar_url).toMatch(/\/storage\/team-icons\/owner\.png\?q=1$/);
   });
 
   it("rewrites absolute storage URLs but keeps unrelated external URLs", () => {
-    storeUser({ avatar_url: "https://cdn.example.com/storage/avatars/user-3.png?size=64" });
-    expect(getCurrentUser()?.avatar_url).toMatch(/\/storage\/avatars\/user-3\.png\?size=64$/);
+    storeUser({ avatar_url: "https://cdn.example.com/storage/users-icons/user-3.png?size=64" });
+    expect(getCurrentUser()?.avatar_url).toMatch(/\/storage\/users-icons\/user-3\.png\?size=64$/);
 
     storeUser({ avatar_url: "https://cdn.example.com/logo.png" });
     expect(getCurrentUser()?.avatar_url).toBe("https://cdn.example.com/logo.png");
@@ -70,13 +70,13 @@ describe("avatar URL normalization", () => {
 
   it("normalizes the profile response before persisting it", async () => {
     const fetchMock = vi.fn(async () =>
-      jsonResponse({ data: { ...baseUser(), avatar_path: "avatars/profile.png" } }),
+      jsonResponse({ data: { ...baseUser(), icon_path: "users-icons/profile.png" } }),
     );
     vi.stubGlobal("fetch", fetchMock);
 
     const profile = await getProfile();
 
-    expect(profile.avatar_url).toMatch(/\/storage\/avatars\/profile\.png$/);
+    expect(profile.avatar_url).toMatch(/\/storage\/users-icons\/profile\.png$/);
     expect(JSON.parse(localStorage.getItem("eventy_user") ?? "{}").avatar_url).toBe(
       profile.avatar_url,
     );
@@ -87,8 +87,8 @@ describe("avatar URL normalization", () => {
     const file = new File(["avatar"], "photo.png", { type: "image/png" });
     const uploadedUser = {
       ...baseUser(),
-      avatar_path: "avatars/user-uploaded.png",
-      avatar_url: "/storage/avatars/user-uploaded.png",
+      icon_path: "users-icons/user-uploaded.png",
+      avatar_url: "/storage/users-icons/user-uploaded.png",
     };
     const fetchMock = vi.fn(async () =>
       jsonResponse({ message: "Avatar uploaded successfully.", data: uploadedUser }),
@@ -106,7 +106,7 @@ describe("avatar URL normalization", () => {
     expect(apiPath(url)).toBe("/api/v1/profile/avatar");
     expect(init.method).toBe("POST");
     expect(body.get("avatar")).toBe(file);
-    expect(user.avatar_url).toMatch(/\/storage\/avatars\/user-uploaded\.png$/);
+    expect(user.avatar_url).toMatch(/\/storage\/users-icons\/user-uploaded\.png$/);
     expect(JSON.parse(localStorage.getItem("eventy_user") ?? "{}").avatar_url).toBe(
       user.avatar_url,
     );
