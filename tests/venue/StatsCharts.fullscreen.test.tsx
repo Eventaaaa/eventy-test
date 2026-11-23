@@ -76,14 +76,16 @@ describe("StatsCharts fullscreen", () => {
   it("renders all charts without crashing", () => {
     renderPage();
     expect(screen.getByText("Revenue Breakdown")).toBeTruthy();
-    expect(screen.getByText("Bookings by Status")).toBeTruthy();
+    expect(screen.getByText("Bookings Status")).toBeTruthy();
+    expect(screen.getByText("Confirmed")).toBeTruthy();
+    expect(screen.getByText("Pending")).toBeTruthy();
     expect(screen.getByText("Bookings by Period")).toBeTruthy();
     expect(screen.getByText("Bookings & Revenue Over Time")).toBeTruthy();
   });
 
   it("opens a fullscreen dialog when a chart is clicked", () => {
     renderPage();
-    const donut = screen.getByTitle("Expand Bookings by Status");
+    const donut = screen.getByTitle("Expand Bookings Status");
     fireEvent.click(donut);
     expect(screen.getByRole("dialog")).toBeTruthy();
     expect(screen.getByText("Ctrl+scroll to zoom · drag to pan")).toBeTruthy();
